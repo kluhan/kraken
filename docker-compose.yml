@@ -1,0 +1,220 @@
+version: '3.8'
+services:
+  scylla:
+    build: .
+    image: "kraken:latest"
+    container_name: gpk_scylla
+    command:
+      - ./wait-for-it.sh
+      - 'rabbitmq:5672'
+      - '--'
+      - ./wait-for-it.sh
+      - 'redis:6379'
+      - '--'
+      - celery
+      - '--app=kraken.celery_app'
+      - worker
+      - '--queues=pipeline,callback,terminator,request,celery,default'
+      - '--concurrency=64'
+      - '--loglevel=INFO'
+      - '--uid=nobody'
+      - '--gid=nogroup'
+      - '--heartbeat-interval=2'
+      - '--task-events'
+      - '--hostname=scylla@%n'
+    env_file:
+      - env/.mongodb.env
+      - env/.worker.env
+    depends_on:
+      - rabbitmq
+      - redis
+      - mongodb
+    healthcheck:
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 15s
+      test: 'celery --app=kraken.celery_app inspect -d scylla@$${HOSTNAME} ping || exit 1'
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+    restart: on-failure
+  charybdis:
+    build: .
+    image: "kraken:latest"
+    container_name: gpk_charybdis
+    command:
+      - ./wait-for-it.sh
+      - 'rabbitmq:5672'
+      - '--'
+      - ./wait-for-it.sh
+      - 'redis:6379'
+      - '--'
+      - celery
+      - '--app=kraken.celery_app'
+      - worker
+      - '--queues=crawler,celery,default'
+      - '--concurrency=32'
+      - '--loglevel=INFO'
+      - '--uid=nobody'
+      - '--gid=nogroup'
+      - '--heartbeat-interval=2'
+      - '--task-events'
+      - '--hostname=charybdis@%n'
+    env_file:
+      - env/.mongodb.env
+      - env/.worker.env
+    depends_on:
+      - rabbitmq
+      - redis
+      - mongodb
+    healthcheck:
+      interval: 60s
+      timeout: 3600s # This worker pocesses long running tasks hence the long timeout
+      retries: 3
+      start_period: 15s
+      test: 'celery --app=kraken.celery_app inspect -d charybdis@$${HOSTNAME} ping || exit 1'
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+    restart: on-failure
+  flower:
+    build: .
+    image: "kraken:latest"
+    container_name: gpk_flower
+    ports:
+      - '8888:8888'
+    command:
+      - ./wait-for-it.sh
+      - 'rabbitmq:5672'
+      - '--'
+      - ./wait-for-it.sh
+      - 'redis:6379'
+      - '--'
+      - celery
+      - '--app=kraken.celery_app'
+      - flower
+      - '--loglevel=INFO'
+    env_file:
+      - env/.mongodb.env
+      - env/.worker.env
+      - env/.flower.env
+    depends_on:
+      - rabbitmq
+      - redis
+    healthcheck:
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+      test: 'curl -f http://localhost:8888/api/workers || exit 1'
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+  rabbitmq:
+    build: ./docker/rabbitmq
+    image: rabbitmq
+    container_name: gpk_rabbitmq
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    env_file:
+      - env/.rabbitmq.env
+    healthcheck:
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+      test: 'rabbitmq-diagnostics -q check_running && rabbitmq-diagnostics -q check_local_alarms'
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+    restart: unless-stopped
+  mongodb:
+    image: 'mongo:latest'
+    container_name: gpk_mongodb
+    ports:
+      - '27017:27017'
+    env_file:
+      - env/.mongodb.env
+    command:
+      - '--quiet'
+      - '--auth'
+    volumes:
+      - 'mongodb_data:/data/db'
+    healthcheck:
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+      test: 'mongosh --quiet --eval "db.runCommand({ ping: 1 })"'
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+    restart: unless-stopped
+  redis:
+    image: 'redislabs/redismod:latest'
+    container_name: gpk_redis
+    ports:
+      - '6379:6379'
+    healthcheck:
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+      test: 'redis-cli ping | grep PONG'
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+  leek:
+    image: kodhive/leek
+    container_name: gpk_leek
+    ports:
+      - '5010:5000'
+      - '8000:8000'
+    env_file:
+      - env/.leek.env
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+  elastic:
+    image: 'docker.elastic.co/elasticsearch/elasticsearch:8.5.2'
+    container_name: gpk_elastic
+    ports:
+      - '9200:9200'
+      - '9300:9300'
+    env_file:
+      - env/.elastic.env
+    command:
+      - elasticsearch
+    healthcheck:
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+      test: 'curl --silent --fail localhost:9200/_cluster/health || exit 1'
+    environment:
+      - cluster.name=es-docker
+      - node.name=node1
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+volumes:
+  mongodb_data:
+    driver: local
