@@ -40,6 +40,9 @@ While Targets define the records to be crawled, Stages define how a Crawl should
 ## Installation
 This section describes how to install the Kraken on a single machine.
 
+### Prerequisites
+To run the Kraken, you need to have a working installation of [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/). Alternatively, you can use [Rancher Desktop](https://rancherdesktop.io/), a Docker desktop alternative for Windows, Mac, and Linux. If neither is available, you can try [Podman](https://podman.io/) as an untested alternative, which is a drop-in replacement for Docker and seems to work better in some cases on the M1 architecture.
+
 ### Step 1: Summon the Kraken!
 To install the **Kraken**, you basically need two things:
 the **Docker Image** and and some **Configuration File**.
@@ -105,6 +108,50 @@ After opening the Flower UI, you should see the Flower dashboard with two regist
 ## Step 5: Setup Leek *(Optional)*
 The Kraken comes with two monitoring tools: **Flower**, which you already used in the previous step, and **Leek**. **Leek** provides a more detailed view of the workers and their tasks than **Flower** but requires some additional configuration. To do so, open `http://localhost:8000` in your browser and create a new application "kraken" with the description "Kraken". After a few seconds, both workers "scylla" and "charybdis" should be visible in the dashboard.
 
+# Crawling the Google Play Store: A Quickstart guide
+This section describes how to crawl the Google Play Store with the Kraken. The Kraken comes with a set of predefined targets and stages that can be used to crawl the Google Play Store.
+
+## Prerequisites
+Before you can start crawling the Google Play Store, it is recommended install poetry, a dependency manager for Python. Instructions on how to install poetry can be found [here](https://python-poetry.org/docs/#installation). Once poetry is installed, you can install the dependencies for the Kraken by running the following command in the root directory of the Kraken:
+
+    poetry install
+
+If installing poetry is not an option, you can use the Scylla or Charybdis container, as they already contain all the necessary dependencies. To do so, you can use the following command:
+
+    docker exec -it gpk_scylla bash
+
+If you use the shell inside the container, you can omit the `poetry run` command in the following steps.
+
+## Step 1: Add Targets to the Database
+The first step is to add some targets to the MongoDB database. This can be done by using the `kraken_cli.py` script. To do so, use the command: 
+    
+    poetry run python kraken_cli.py setup-targets --tag="initial" ./resources/targets/gps_list_small.json en de
+
+This command will add the targets from the file `./resources/targets/gps_list_small.json` for the languages English and German to the MongoDB database. The targets are tagged with the tag "initial". Tags are used to group targets and allows to crawl only a subset of the known targets. If you want to add targets in a different language, you can use the ISO 639-1 code of the language. For a list of all available languages, see [here](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes). For more information on how to use the `kraken_cli.py` script, use the command `poetry run python kraken_cli.py setup-targets --help`.
+
+The following three lists of targets are included in the Kraken:
+* `./resources/targets/gps_list_small.json`: A list of 31 Apps that can be used for testing purposes.
+* `./resources/targets/gps_list_medium.json`: A list of 104311 Apps.
+* `./resources/targets/gps_list_large.json`: A list of 2516756 Apps, representing 99% of all Apps in the Google Play Store as of 2022-09-01.
+
+## Step 1: Define the Stages of the Crawl
+While Targets define the records to be crawled, Stages define how a Crawl should be performed. The Kraken comes with a set of predefined stages that can be used to crawl the Google Play Store. To use the predefined stages, you can use the command:
+
+    poetry run python kraken_cli.py setup-series \
+        --description="A Series created by by the Quickstart guide" \
+        --stage="resources/stages/stage_gps_detail_full.json" \
+        --stage="resources/stages/stage_gps_review_static.json" \
+        --filter="resources/filter/target_filter_example_0.json" \
+        QuickstartGuideSeries
+
+This command will add a new series to the MongoDB database with the description "A Series created by by the Quickstart guide" and the name "QuickstartGuideSeries". The series contains two stages: `stage_gps_detail_full.json` and `stage_gps_reviews_static.json`. The first stage will crawl the details of the Apps and the second stage will crawl the first 1000 reviews of the Apps. The stages are executed in the order they are defined in the command. The `--filter` parameter defines a subset of the known targets for the crawl. In this case, the filter will only select targets that have the tag "initial". For more information on how to use the `kraken_cli.py` script, use the command `poetry run python kraken_cli.py setup-series --help`.
+
+## Step 2: Start the Daemon
+After the targets and the series, containing the stages and the filter, have been added to the database, the daemon can be started. To do so, use the command:
+
+    poetry run python kraken_cli.py daemon --is_name QuickstartGuideSeries
+
+This command will start a daemon that will execute the specified series by submit tasks to the Workers. The daemon will run until all targets have been crawled or until the daemon is stopped. For more information on how to use the `kraken_cli.py` script, use the command `poetry run python kraken_cli.py daemon --help`.
 
 # Tips, Tricks and known Pitfalls
 - Since the host network driver is not available on macOS, the docker-compose.yml file is configured to use the bridge driver. Therefore, to access a service within a container from **within** a container, you can no longer use `localhost` even if the service is technically running on the same machine. Instead, use the name of the service as the host name. For example, to access the Redis service from the google-play-kraken service, use `redis` as the hostname. For external access, i.e. access from outside a docker container, localhost can still be used.
