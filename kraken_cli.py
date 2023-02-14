@@ -303,7 +303,8 @@ def __write_series_to_database(
         print("[green]DONE")
         print()
         print("Summary:")
-        print(f"    ID: [green]{Series.objects.get(name=name).id}[/]")
+        print(f"    ID:   [green]{Series.objects.get(name=name).id}[/]")
+        print(f"    Name: [green]{Series.objects.get(name=name).name}[/]")
         print()
 
 
@@ -489,12 +490,19 @@ def setup_series(name, description, stage: List[TextIOWrapper], filter: List[str
 @click.argument("id", nargs=1, required=True)
 @click.option(
     "--continue_crawl",
-    is_flag=False,
+    is_flag=True,
     show_default=True,
     default=True,
     help="Continue last crawl ot the Series, if it was not finished. If this option is disabled, a new one will be started.",
 )
-def daemon(id, continue_crawl: bool):
+@click.option(
+    "--is_name",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help="Load the Series by name instead of by ID.",
+)
+def daemon(id, continue_crawl: bool, is_name: bool):
     """
     Command to start a daemon that will execute a new Crawl for the specified Series.
     """
@@ -505,7 +513,10 @@ def daemon(id, continue_crawl: bool):
     with MongoEngineContextManager():
 
         # Load the Series
-        series: Series = Series.objects.get(id=id)
+        if is_name:
+            series: Series = Series.objects.get(name=id)
+        else:
+            series: Series = Series.objects.get(id=id)
 
         if continue_crawl and len(series.crawls) >= 1:
             # Get the last Crawl of the Series
