@@ -24,7 +24,9 @@ class MongoDBDatabaseFactory:
     def get(cls) -> Database:
         client = MongoClient(
             host=str(os.environ.get("MONGODB_HOST", None)),
-            port=int(os.environ.get("MONGODB_PORT", None)),
+            port=int(os.environ.get("MONGODB_PORT"))
+            if os.environ.get("MONGODB_PORT")
+            else 0,
             username=str(os.environ.get("MONGODB_USER", None)),
             password=str(os.environ.get("MONGODB_PASSWORD", None)),
         )
@@ -38,9 +40,9 @@ class MongoEngineConnectionWrapper:
         if parameter is None:
             return connect(
                 host=str(os.environ.get("MONGODB_HOST", None)),
-                port=int(os.environ.get("MONGODB_PORT", None)),
-                username=str(os.environ["MONGODB_USER"]),
-                password=str(os.environ["MONGODB_PASSWORD"]),
+                port=int(os.environ.get("MONGODB_PORT", 0)),
+                username=str(os.environ.get("MONGODB_USER", None)),
+                password=str(os.environ.get("MONGODB_PASSWORD", None)),
                 db=str(os.environ.get("MONGODB_DATA_DATABASE", None)),
                 authentication_source=str(
                     os.environ.get("MONGODB_AUTHENTICATION_SOURCE", None)

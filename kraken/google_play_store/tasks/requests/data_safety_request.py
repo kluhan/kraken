@@ -40,6 +40,76 @@ def request_data_safety(
     | serializer      | "orjson"                                 | `Link <https://docs.celeryq.dev/en/stable/userguide/tasks.html#Task.serializer>`_
     | rate_limit      | "10/s"                                   | `Link <https://docs.celeryq.dev/en/stable/userguide/tasks.html#Task.rate_limit>`_
 
+    Examples
+    --------
+    Typically, this function is not called directly by the user, but via the
+    :func:`kraken.core.tasks.multi_stage_crawler` task. However, if
+    it is called directly, it is used as follows:
+
+    ```python
+    from kraken.google_play_store.tasks.requests import request_data_safety
+    # The celery_app must be imported before the task is called, otherwise
+    # celery cannot connect to the broker.
+    from kraken import celery_app
+
+    # Retrieve data safety information via a worker.
+    result = request_data_safety.apply_async(app_id="com.google.android.youtube", lang="en")
+
+    # Retrieve data safety information directly.
+    result = request_data_safety(app_id="com.google.android.youtube", lang="en")
+    ```
+
+    The result of the task is a :class:`RequestResult` object, which contains
+    the retrieved data safety information and looks as follows:
+
+    ```python
+    >>> print(result)
+    RequestResult(
+        result={
+            'dataCollected': {
+                'Location': [
+                    {
+                        'name': 'Approximate location',
+                        'optional': False,
+                        'usage': 'App functionality, Analytics, Developer communications, Advertising or marketing, Fraud prevention, security, and compliance, Personalization, Account management'
+                    },
+                    {
+                        'name': 'Precise location',
+                        'optional': True,
+                        'usage': 'App functionality, Analytics, Personalization'
+                    }
+                ],
+                'Personal info': [
+                    ...
+                ],
+                ...
+            },
+            'dataShared': {},
+            'securityPractices': [
+                {
+                    'name': 'Data is encrypted in transit',
+                    'description': 'Your data is transferred over a secure connection'
+                },
+                ...
+            ],
+            'appId': 'com.google.android.youtube',
+            'url': 'https://play.google.com/store/apps/datasafety?id=com.google.android.youtube&hl=en&gl=us',
+            'lang': 'en',
+            'app_id': 'com.google.android.youtube',
+            'document_type': <DocumentType.DATA_SAFETY: 'DATA_SAFETY'>
+        },
+        subsequent_kwargs=None,
+        batch=False,
+        gain=1,
+        cost=1,
+        target_not_found=False,
+        target_exhausted=None
+    )
+    ```
+    For further information on the returned data, see the documentation of the
+    :func:`google-play-scraper.data_safety` function.
+
+
     Parameters
     ----------
     app_id : str
@@ -67,4 +137,4 @@ def request_data_safety(
     except NotFoundError:
         return RequestResult(result=None, target_not_found=True, gain=0)
 
-    return RequestResult(result=response)
+    return RequestResult(result=response, target_exhausted=True)

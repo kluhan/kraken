@@ -3,7 +3,7 @@ This module contains the document classes to represent the information returned
 by the Google Play Store. Each class represents a specific type of information and
 can be used to store the information in a database. Check
 `mongoengine.Document <http://docs.mongoengine.org/apireference.html#documents>`_
-and "google_play_kraken.core.types.HistoricDocument" and for more information about
+and :class:`kraken.core.types.HistoricDocument` for more information about
 how to use the inherited methods and functions.
 """
 

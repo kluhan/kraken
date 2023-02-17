@@ -2,9 +2,6 @@ from typing import List
 from dataclasses import asdict
 
 from celery import shared_task
-from celery.canvas import signature, Signature
-from dacite.core import from_dict
-from dacite.config import Config
 
 from kraken.core.types import (
     ExecutionToken,

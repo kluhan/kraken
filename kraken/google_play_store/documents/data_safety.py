@@ -5,15 +5,14 @@ from kraken.core.types import HistoricDocument
 
 class DataSafety(HistoricDocument):
     """
-    A class to represent a Google Play Store app data safety page. It inherits from
-    :class:`kraken.core.types.HistoricDocument` which in turn inherits from
-    :class:`mongoengine.Document`, allowing it to be stored in a MongoDB database using
-    a backwards delta encoding.
+    A class for modelling and representing the information of the data-safety
+    page of a Google Play Store app.
+    It inherits from :class:`kraken.core.types.HistoricDocument`, allowing it
+    to be stored in a MongoDB.
     """
 
     id: str = StringField(primary_key=True)
-    """The ID used to store the document in the database. Per default this is a
-    combination of :attr:`app_id` and :attr:`lang`. Default format: ``<app_id>:<lang>``"""
+    """The ID used to store the document in the database."""
     app_id: str = StringField(unique_with="lang")
     """The ID of the app as used in the Google Play Store. Has a unique constraint with :attr:`lang`."""
     lang: str = StringField(unique_with="app_id")
@@ -36,7 +35,8 @@ class DataSafety(HistoricDocument):
         *args,
         **kwargs
     ):
-        """Constructor for a :class:`DataSafety` object. :attr:`app_id`, :attr:`lang` are required.
+        """
+        Constructor for a :class:`DataSafety` object. :attr:`app_id`, :attr:`lang` are required.
         All other fields are optional and can be set using keyword arguments. For a list of
         available fields, see :class:`DataSafety`.
 
@@ -65,8 +65,9 @@ class DataSafety(HistoricDocument):
 
     # TODO: Implement a proper weight function
     def weight(self) -> int:
-        """Returns the weight of the object, often used for monitoring purposes
-        as well as for resource allocation. The weight is always 1.
+        """
+        Returns the weight of the object. The weight of a :class:`DataSafety`
+        is allays equal to `1`.
 
         Returns
         -------
@@ -78,14 +79,6 @@ class DataSafety(HistoricDocument):
 
     @staticmethod
     def wcf_weights() -> dict[str, int]:
-        """Returns the weights of the individual fields for the WCF algorithm. Check
-        :class:`kraken.core.types.historic_document.HistoricDocument` for more information.
-
-        Returns
-        -------
-        dict[str, int]
-            The weights for relevant fields for the WCF model.
-        """
 
         return {
             "data_collected": 1,
@@ -94,15 +87,17 @@ class DataSafety(HistoricDocument):
         }
 
     def compress(self) -> None:
-        """Compresses the object to reduce the memory footprint of the object
-        when it is stored. Currently, this method does nothing and is only intended
-        for consistency with other classes of this package.
+        """
+        Compresses the object to reduce the memory footprint of the object
+        when it is stored. Currently, this method does nothing and only exists
+        for compatibility reasons.
         """
         pass
 
     @classmethod
     def from_response(cls, response: dict, compress: bool = False):
-        """Creates a :class:`DataSafety` object from a dict returned by
+        """
+        Creates a :class:`DataSafety` object from a dict returned by
         :func:`google_play_scraper.data_safety`.
 
         Parameters

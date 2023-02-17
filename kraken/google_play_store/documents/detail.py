@@ -20,10 +20,10 @@ SCREENSHOT_PREFIX = "https://play-lh.googleusercontent.com"
 
 class Detail(HistoricDocument):
     """
-    A class to represent a Google Play Store app detail page. It inherits from
-    :class:`kraken.core.types.HistoricDocument` which in turn inherits from
-    :class:`mongoengine.Document`, allowing it to be stored in a MongoDB database using
-    a backwards delta encoding.
+    A class for modelling and representing the information of the details
+    page of a Google Play Store app.
+    It inherits from :class:`kraken.core.types.HistoricDocument`, allowing it
+    to be stored in a MongoDB.
     """
 
     id: str = StringField(primary_key=True)
@@ -123,7 +123,7 @@ class Detail(HistoricDocument):
     data_safety_short: list[dict[str, str]] = ListField()
     """A list of data safety informations of the app in a short version."""
 
-    meta = {"collection": "gpc_detail", "indexes": [("app_id", "lang")]}
+    meta = {"collection": "gps_detail", "indexes": [("app_id", "lang")]}
 
     def __init__(
         self,
@@ -134,10 +134,10 @@ class Detail(HistoricDocument):
         *args,
         **kwargs
     ):
-        """Constructor for a :class:`Detail` object. :attr:`app_id`, :attr:`lang` are required.
+        """
+        Constructor for a :class:`Detail` object. :attr:`app_id`, :attr:`lang` are required.
         All other fields are optional and can be set using keyword arguments. For a list of
         available fields, see :class:`Detail`.
-
 
         Parameters
         ----------
@@ -162,8 +162,9 @@ class Detail(HistoricDocument):
             self.compress()
 
     def weight(self) -> int:
-        """Returns the weight of the object, often used for monitoring purposes
-        as well as for resource allocation. The weight is equal to :attr:`real_installs`.
+        """
+        Returns the weight of the object. The weight of an :class:`Detail` is
+        equal to its :attr:`real_installs`.
 
         Returns
         -------
@@ -179,13 +180,6 @@ class Detail(HistoricDocument):
 
     @staticmethod
     def wcf_weights():
-        """Returns the weights of the individual fields for the WCF algorithm. Check
-        :class:`kraken.core.types.historic_document.HistoricDocument` for more information.
-
-        Returns
-        -------
-        The weights for relevant fields for the WCF model.
-        """
 
         return {
             "title": 10,
@@ -216,10 +210,13 @@ class Detail(HistoricDocument):
     def compress(self) -> None:
         """
         Compresses the object to reduce the memory footprint of the object
-        when it is stored. The prefix "https://play-lh.googleusercontent.com" is
-        removed from the following fields: :attr:`icon`, :attr:`header_image`,
-        :attr:`video_image`, :attr:`screenshots` and static content is removed
-        from :attr:`data_safety_short`. All other fields are not affected.
+        when it is stored. Specifically, the following fields are compressed:
+
+        - :attr:`icon` is shortened by removing the prefix `https://play-lh.googleusercontent.com`.
+        - :attr:`header_image` is shortened by removing the prefix `https://play-lh.googleusercontent.com`.
+        - :attr:`video_image` is shortened by removing the prefix `https://play-lh.googleusercontent.com`.
+        - :attr:`screenshots` is shortened by removing the prefix `https://play-lh.googleusercontent.com`.
+        - :attr:`data_safety_short` is set to ``None`` if it is just a static string.
         """
 
         # compress icon
@@ -245,7 +242,8 @@ class Detail(HistoricDocument):
 
     @classmethod
     def from_response(cls, response: dict, compress: bool = False):
-        """Creates a :class:`Detail` object from a dict returned by
+        """
+        Creates a :class:`Detail` object from a dict returned by
         :func:`google_play_scraper.app`.
 
         Parameters

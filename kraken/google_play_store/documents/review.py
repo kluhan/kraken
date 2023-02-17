@@ -22,6 +22,12 @@ USER_NAME_TRIVIAL = [
 
 
 class Review(HistoricDocument):
+    """
+    A class for modelling and representing a user review of a Google Play Store app.
+    It inherits from :class:`kraken.core.types.HistoricDocument`, allowing it
+    to be stored in a MongoDB.
+    """
+
     review_id: str = StringField(primary_key=True)
     """The ID used to store the document in the database."""
     replied_at: datetime = DateTimeField()
@@ -47,12 +53,17 @@ class Review(HistoricDocument):
     user_name: str = StringField()
     """The name of the user who wrote the review."""
 
-    meta = {
-        "collection": "gpc_review",
-    }
+    meta = {"collection": "gps_review"}
 
-    def __init__(self, review_id: str, compress: bool = False, *args, **kwargs):
-        """Constructor for a :class:`Review` object. :attr:`review_id` is required.
+    def __init__(
+        self,
+        review_id: str,
+        compress: bool = False,
+        *args,
+        **kwargs,
+    ):
+        """
+        Constructor for a :class:`Review` object. :attr:`review_id` is required.
         All other fields are optional and can be set using keyword arguments. For a list of
         available fields, see :class:`Review`.
 
@@ -72,8 +83,9 @@ class Review(HistoricDocument):
             self.compress()
 
     def weight(self):
-        """Returns the weight of the object, often used for monitoring purposes
-        as well as for resource allocation. The weight is equal to :attr:`thumbs_up_count`.
+        """
+        Returns the weight of the object. The weight of an :class:`Review` is
+        equal to its :attr:`thumbs_up_count`.
 
         Returns
         -------
@@ -89,13 +101,6 @@ class Review(HistoricDocument):
 
     @staticmethod
     def wcf_weights():
-        """Returns the weights of the individual fields for the WCF algorithm. Check
-        :class:`kraken.core.types.historic_document.HistoricDocument` for more information.
-
-        Returns
-        -------
-        The weights for relevant fields for the WCF model.
-        """
 
         return {
             "at": 1,
@@ -109,11 +114,13 @@ class Review(HistoricDocument):
     def compress(self) -> None:
         """
         Compresses the object to reduce the memory footprint of the object
-        when it is stored. The prefix "https://play-lh.googleusercontent.com" is
-        removed from :attr:`user_image` and :attr:`user_name` is set to ``None``
-        if it is equal to one of the default names like ""A Google user" or
-        "Un usuario de Google". Additionally, :attr:`review_id` is hashed using SHA256
-        as the review ID returned by the Google Play API is quite long.
+        when it is stored. Specifically, the following fields are compressed:
+
+        - :attr:`review_id` is hashed using SHA256 as the review ID returned by the Google
+            Play API is quite long.
+        - :attr:`user_image` is shortened by removing the prefix "https://play-lh.googleusercontent.com".
+        - :attr:`user_name` is set to ``None`` if it is equal to one of the default names used
+            by Google Play Store for anonymous users.
         """
 
         # compress review_id
@@ -132,7 +139,8 @@ class Review(HistoricDocument):
 
     @classmethod
     def from_response(cls, response: dict, compress: bool = False):
-        """Creates a :class:`Review` object from a dict returned by
+        """
+        Creates a :class:`Review` object from a dict returned by
         :func:`google_play_scraper.reviews`.
 
         Parameters

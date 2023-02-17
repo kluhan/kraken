@@ -2,7 +2,7 @@ from enum import Enum
 
 
 class DocumentType(str, Enum):
-    """An enum to represent the types :class:`DataSafety`, :class:`Detail`, :class:`Permission` and :class:`Review`."""
+    """An enum to enumerate the types :class:`DataSafety`, :class:`Detail`, :class:`Permission` and :class:`Review`."""
 
     DETAIL = "DETAIL"
     PERMISSION = "PERMISSION"

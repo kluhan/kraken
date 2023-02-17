@@ -1,4 +1,3 @@
-from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
 
@@ -14,6 +13,8 @@ from mongoengine.fields import (
     DynamicField,
     ReferenceField,
 )
+
+from .slim_target import SlimTarget
 
 # TODO: Add documentation
 class HistoricValue(EmbeddedDocument):
@@ -89,11 +90,3 @@ class Target(Document):
             tags=[tag for tag in self.tags],
             kwargs={k: v for (k, v) in self.kwargs.items()},
         )
-
-
-# TODO: Add documentation
-@dataclass
-class SlimTarget:
-    id: str = field(default="")
-    tags: list[str] = field(default_factory=list)
-    kwargs: dict = field(default_factory=dict)
