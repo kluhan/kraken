@@ -2,7 +2,14 @@ version: '3.8'
 services:
   scylla:
     build: .
-    image: "kraken:latest"
+    # There is also a nightly build available, which is built every night at 
+    # 00:00 UTC and tagged as ghcr.io/kluhan/kraken:nightly. This build is built
+    # from the same commit as the latest tag, but with the latest dependencies.
+    # It's particularly useful when the target datasource is updated, which could
+    # cause issues with older versions of some scrping librarbys.
+    #
+    # IF YOU CHANGE THIS, ALSO CHANGE IT FOR charybdis AND flower BELOW
+    image: "ghcr.io/kluhan/kraken:latest"
     container_name: gpk_scylla
     command:
       - ./wait-for-it.sh
@@ -43,7 +50,7 @@ services:
     restart: on-failure
   charybdis:
     build: .
-    image: "kraken:latest"
+    image: "ghcr.io/kluhan/kraken:latest"
     container_name: gpk_charybdis
     command:
       - ./wait-for-it.sh
@@ -84,7 +91,7 @@ services:
     restart: on-failure
   flower:
     build: .
-    image: "kraken:latest"
+    image: "ghcr.io/kluhan/kraken:latest"
     container_name: gpk_flower
     ports:
       - '8888:8888'
