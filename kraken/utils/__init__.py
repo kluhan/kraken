@@ -18,6 +18,5 @@ __all__ = [
     "MongoEngineContextManager",
     "increment_nested_dict",
     "mongodb_key_sanitizer",
-    "Bucket",
     "combine_dicts_by_addition",
 ]

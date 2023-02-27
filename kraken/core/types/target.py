@@ -15,6 +15,7 @@ from mongoengine.fields import (
     ReferenceField,
 )
 
+
 # TODO: Add documentation
 class HistoricValue(EmbeddedDocument):
     value: any = DynamicField()  # type: ignore
