@@ -1,0 +1,48 @@
+name: Documentation Publish
+
+# build the documentation whenever there are new commits on main
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+# security: restrict permissions for CI jobs.
+permissions:
+  contents: read
+
+jobs:
+  # Build the documentation and upload the static HTML files as an artifact.
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      # Install poetry
+      - run: pip install poetry
+      # Install all dependencys
+      - run: poetry install --no-interaction --no-ansi
+    
+      # Build doc
+      - run: poetry run pdoc -o ./docs ./kraken
+
+      - uses: actions/upload-pages-artifact@v1.0.7
+        with:
+          path: docs/
+
+  # Deploy the artifact to GitHub pages.
+  # This is a separate job so that only actions/deploy-pages has the necessary permissions.
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v1.2.4
