@@ -502,7 +502,21 @@ def setup_series(name, description, stage: List[TextIOWrapper], filter: List[str
     default=False,
     help="Load the Series by name instead of by ID.",
 )
-def daemon(id, continue_crawl: bool, is_name: bool):
+@click.option(
+    "-s",
+    "--step_size",
+    default=10,
+    show_default=True,
+    help="The number of Targets to queue per step.",
+)
+@click.option(
+    "-t",
+    "--step_period",
+    default=10,
+    show_default=True,
+    help="The time between two steps in seconds.",
+)
+def daemon(id, continue_crawl: bool, is_name: bool, step_size: int, step_period: int):
     """
     Command to start a daemon that will execute a new Crawl for the specified Series.
     """
@@ -528,8 +542,8 @@ def daemon(id, continue_crawl: bool, is_name: bool):
 
         scheduler = StaticScheduler(
             crawl=crawl,
-            step_size=5,
-            step_period=timedelta(seconds=5),
+            step_size=step_size,
+            step_period=timedelta(seconds=step_period),
             crawl_task=signature(multi_stage_crawler.name),
         )
 
